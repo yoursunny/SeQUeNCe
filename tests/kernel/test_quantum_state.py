@@ -1,10 +1,10 @@
 from math import sqrt
-from numpy.random import default_rng
+
 import pytest
+from numpy.random import default_rng
 
-from sequence.kernel.quantum_state import KetState, FreeQuantumState
+from sequence.kernel.quantum_state import FreeQuantumState, KetState
 from sequence.utils.encoding import polarization
-
 
 rng = default_rng()
 
@@ -127,4 +127,3 @@ def test_measure_entangled():
 def test_polarization_noise():
     qs = FreeQuantumState()
     pass
-
