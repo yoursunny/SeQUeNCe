@@ -10,20 +10,30 @@ The manager defines an API for interacting with quantum states.
 from __future__ import annotations
 
 from abc import abstractmethod
+from math import sqrt
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
     from .quantum_state import State
 
-from numpy import array, base_repr, cumsum, log, zeros
+from numpy import array, base_repr, cumsum, identity, kron, zeros
 from qutip_qip.circuit import QubitCircuit
 from qutip_qip.operations import Gate, gate_sequence_product
 from scipy.sparse import csr_matrix
 from scipy.special import binom
 
 from .quantum_state import BellDiagonalState, DensityState, KetState
-from .quantum_utils import *
+from .quantum_utils import (density_partial_trace,
+                            measure_entangled_state_with_cache_density,
+                            measure_entangled_state_with_cache_fock_density,
+                            measure_entangled_state_with_cache_ket,
+                            measure_multiple_with_cache_density,
+                            measure_multiple_with_cache_fock_density,
+                            measure_multiple_with_cache_ket,
+                            measure_state_with_cache_density,
+                            measure_state_with_cache_fock_density,
+                            measure_state_with_cache_ket)
 
 KET_STATE_FORMALISM = "ket_vector"
 DENSITY_MATRIX_FORMALISM = "density_matrix"

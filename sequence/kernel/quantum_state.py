@@ -11,11 +11,13 @@ These include 2 classes used by a quantum manager, and one used for individual p
 import math
 from abc import ABC
 
-from numpy import arange, cos, log, log2, pi, sin
+from numpy import arange, array, cos, kron, log, log2, outer, pi, sin, trace
 from numpy.random import Generator
 
 from ..constants import EPSILON
-from .quantum_utils import *
+from .quantum_utils import (measure_entangled_state_with_cache,
+                            measure_multiple_with_cache,
+                            measure_state_with_cache)
 
 
 def swap_bits(num, pos1, pos2):

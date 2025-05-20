@@ -485,7 +485,7 @@ def test_qmanager_measure_fock():
     series_elem_list = [((-1) ** i) * fractional_matrix_power(create, i + 1).dot(
         fractional_matrix_power(destroy, i + 1)) / math.factorial(i + 1) for i in range(TRUNCATION)]
     povm1 = sum(series_elem_list)
-    povm0 = eye(TRUNCATION + 1) - povm1
+    povm0 = np.eye(TRUNCATION + 1) - povm1
 
     # single state
     meas_0 = []
