@@ -10,12 +10,13 @@ The manager defines an API for interacting with quantum states.
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from math import sqrt
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from ..components.circuit import Circuit
-    from .quantum_state import State
+    from .quantum_state import State, KetAmplitudes
 
 from numpy import array, base_repr, cumsum, identity, kron, zeros
 from qutip_qip.circuit import QubitCircuit
@@ -61,7 +62,7 @@ class QuantumManager:
         self.dim = self.truncation + 1
 
     @abstractmethod
-    def new(self, state: any) -> int:
+    def new(self, state: Any) -> int:
         """Method to create a new quantum state.
 
         Args:
@@ -139,11 +140,12 @@ class QuantumManager:
                 gate = Gate("SWAP", targets=[i, j])
                 swap_circuit.add_gate(gate)
                 all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
-        swap_mat = gate_sequence_product(swap_circuit.propagators()).full()
+        swap_mat = cast(Any, gate_sequence_product(
+            swap_circuit.propagators())).full()
         return all_keys, swap_mat
 
     @abstractmethod
-    def set(self, keys: list[int], amplitudes: any) -> None:
+    def set(self, keys: list[int], amplitudes: Any) -> None:
         """Method to set quantum state at a given key(s).
 
         Args:
@@ -182,17 +184,17 @@ class QuantumManagerKet(QuantumManager):
     def __init__(self):
         super().__init__(KET_STATE_FORMALISM)
 
-    def new(self, state=(complex(1), complex(0))) -> int:
+    def new(self, state: Sequence[complex] = (complex(1), complex(0))) -> int:
         key = self._least_available
         self._least_available += 1
         self.states[key] = KetState(state, [key])
         return key
 
-    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp=None) -> dict[int, int]:
+    def run_circuit(self, circuit: Circuit, keys: list[int], meas_samp: float | None = None) -> dict[int, int]:
         super().run_circuit(circuit, keys, meas_samp)
         new_state, all_keys, circ_mat = self._prepare_circuit(circuit, keys)
 
-        new_state = circ_mat @ new_state
+        new_state = cast("KetAmplitudes", circ_mat @ new_state)
 
         if len(circuit.measured_qubits) == 0:
             # set state, return no measurement result
@@ -203,7 +205,7 @@ class QuantumManagerKet(QuantumManager):
         else:
             # measure state (state reassignment done in _measure method)
             keys = [all_keys[i] for i in circuit.measured_qubits]
-            return self._measure(new_state, keys, all_keys, meas_samp)
+            return self._measure(new_state, keys, all_keys, cast(float, meas_samp))
 
     def set(self, keys: list[int], amplitudes: list[complex]) -> None:
         super().set(keys, amplitudes)
@@ -217,7 +219,7 @@ class QuantumManagerKet(QuantumManager):
     def set_to_one(self, key: int):
         self.set([key], [complex(0), complex(1)])
 
-    def _measure(self, state: list[complex], keys: list[int],
+    def _measure(self, state: "KetAmplitudes", keys: list[int],
                  all_keys: list[int], meas_samp: float) -> dict[int, int]:
         """Method to measure qubits at given keys.
 
@@ -233,6 +235,8 @@ class QuantumManagerKet(QuantumManager):
         Returns:
             dict[int, int]: mapping of measured keys to measurement results.
         """
+
+        result, new_state = None, None
 
         if len(keys) == 1:
             if len(all_keys) == 1:
@@ -279,6 +283,7 @@ class QuantumManagerKet(QuantumManager):
             for key in keys:
                 all_keys.remove(key)
 
+        assert result is not None
         result_states = [array([1, 0]), array([0, 1])]
         result_digits = [int(x) for x in bin(result)[2:]]
         while len(result_digits) < len(keys):
@@ -290,6 +295,7 @@ class QuantumManagerKet(QuantumManager):
             self.states[key] = new_state_obj
 
         if len(all_keys) > 0:
+            assert new_state is not None
             new_state_obj = KetState(new_state, all_keys)
             for key in all_keys:
                 self.states[key] = new_state_obj
