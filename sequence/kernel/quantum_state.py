@@ -10,10 +10,13 @@ These include 2 classes used by a quantum manager, and one used for individual p
 
 import math
 from abc import ABC
-from typing import Dict, List, Tuple
+from collections.abc import Iterable, Sequence
+from typing import Any, Dict, List, Tuple, cast
 
-from numpy import arange, array, cos, kron, log, log2, outer, pi, sin, trace
+from numpy import (arange, array, complex128, cos, float64, kron, log, log2,
+                   outer, pi, sin, trace)
 from numpy.random import Generator
+from numpy.typing import NDArray
 
 from ..constants import EPSILON
 from .quantum_utils import (measure_entangled_state_with_cache,
@@ -47,8 +50,8 @@ class State(ABC):
 
         super().__init__()
 
-        self.state = None
-        self.keys = []
+        self.state: Any = None
+        self.keys: List[int] = []
 
     def deserialize(self, json_data) -> None:
         self.keys = json_data["keys"]
@@ -59,9 +62,9 @@ class State(ABC):
             self.state.append(complex_val)
 
     def serialize(self) -> Dict:
-        res = {"keys": self.keys}
-        state = []
-        for cplx_n in self.state:
+        res: Dict = {"keys": self.keys}
+        state: List[float] = []
+        for cplx_n in cast(Iterable[float | complex], self.state):
             if type(cplx_n) is float:
                 state.append(cplx_n)
                 state.append(0)
@@ -78,6 +81,9 @@ class State(ABC):
         return "\n".join(["Keys:", str(self.keys), "State:", str(self.state)])
 
 
+KetAmplitudes = Sequence[complex] | NDArray[complex128 | float64]
+
+
 class KetState(State):
     """Class to represent an individual quantum state as a ket vector.
 
@@ -89,7 +95,7 @@ class KetState(State):
                 Default is 1 for qubit. dim = truncation + 1
     """
 
-    def __init__(self, amplitudes: List[complex], keys: List[int], truncation: int = 1):
+    def __init__(self, amplitudes: KetAmplitudes, keys: List[int], truncation: int = 1):
         """Constructor for ket state class.
 
         Args:
@@ -120,7 +126,7 @@ class KetState(State):
             "Amplitude length: {}, expected subsystems: {}, num keys: {}".format(
                 len(amplitudes), num_subsystems, len(keys))
 
-        self.state = array(amplitudes, dtype=complex)
+        self.state: NDArray[complex128] = array(amplitudes, dtype=complex)
         self.keys = keys
 
 
