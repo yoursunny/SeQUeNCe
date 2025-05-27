@@ -1,9 +1,10 @@
-import numpy as np
-from scipy.linalg import fractional_matrix_power
 import math
 
-from sequence.kernel.quantum_manager import *
+import numpy as np
+from scipy.linalg import fractional_matrix_power
+
 from sequence.components.circuit import Circuit
+from sequence.kernel.quantum_manager import *
 
 
 class DumbCircuit():
@@ -26,7 +27,7 @@ def test_qmanager_new():
     NUM_TESTS = 1000
 
     qm = QuantumManagerKet()
-    
+
     keys = []
     for _ in range(NUM_TESTS):
         keys.append(qm.new())
@@ -102,7 +103,8 @@ def test_qmanager_circuit():
     ket1 = qm.get(key1)
     if ket1.keys[0] > ket1.keys[1]:
         ket1.keys.reverse()
-        ket1.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket1.state
+        ket1.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [
+                              0, 1, 0, 0], [0, 0, 0, 1]]) @ ket1.state
 
     key3 = qm.new()
     key4 = qm.new()
@@ -114,7 +116,8 @@ def test_qmanager_circuit():
     ket2 = qm.get(key3)
     if ket2.keys[0] > ket2.keys[1]:
         ket2.keys.reverse()
-        ket2.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) @ ket2.state
+        ket2.state = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [
+                              0, 1, 0, 0], [0, 0, 0, 1]]) @ ket2.state
 
     assert np.array_equal(qm.get(key1).state, qm.get(key3).state)
 
@@ -214,7 +217,7 @@ def test_qmanager__measure():
             meas_1.append(key)
         else:
             meas_0.append(key)
-    
+
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
         assert np.all(qm.get(key).state == np.array([1, 0]))
@@ -282,7 +285,7 @@ def test_qmanager__measure_density():
             meas_1.append(key)
         else:
             meas_0.append(key)
-    
+
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
     for key in meas_0:
         assert np.all(qm.get(key).state == np.array([[1, 0], [0, 0]]))
@@ -301,7 +304,7 @@ def test_qmanager__measure_density():
             meas_1.append(key)
         else:
             meas_0.append(key)
-    
+
     assert abs((len(meas_0) / NUM_TESTS) - 0.5) < 0.1
 
     # single state in multi-qubit system

@@ -7,15 +7,16 @@ These should not be used directly, but accessed by a QuantumManager instance or 
 from functools import lru_cache
 from math import sqrt
 
-from numpy import array, kron, identity, zeros, trace, outer, eye
+from numpy import array, eye, identity, kron, outer, trace, zeros
 from scipy.linalg import sqrtm
-
 
 a = array([[0, 1], [0, 0]])
 a_dag = array([[0, 0], [1, 0]])
 
-povm_0 = (1/2) * (kron(a_dag @ a, eye(2)) - 1j*kron(a, a_dag) + 1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
-povm_1 = (1/2) * (kron(a_dag @ a, eye(2)) + 1j*kron(a, a_dag) - 1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
+povm_0 = (1/2) * (kron(a_dag @ a, eye(2)) - 1j*kron(a, a_dag) +
+                  1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
+povm_1 = (1/2) * (kron(a_dag @ a, eye(2)) + 1j*kron(a, a_dag) -
+                  1j*kron(a_dag, a) + kron(eye(2), a_dag @ a))
 
 
 @lru_cache(maxsize=1000)
@@ -27,7 +28,8 @@ def measure_state_with_cache(state: tuple[complex, complex], basis: tuple[tuple[
     M0 = outer(u.conj(), u)
 
     # probability of measuring basis[0]
-    prob_0 = (state.conj().transpose() @ M0.conj().transpose() @ M0 @ state).real
+    prob_0 = (state.conj().transpose() @
+              M0.conj().transpose() @ M0 @ state).real
     return prob_0
 
 
@@ -55,7 +57,8 @@ def measure_entangled_state_with_cache(state: tuple[complex], basis: tuple[tuple
             projector1 = kron(projector1, identity(2))
 
     # probability of measuring basis[0]
-    prob_0 = (state.conj().transpose() @ projector0.conj().transpose() @ projector0 @ state).real
+    prob_0 = (state.conj().transpose() @
+              projector0.conj().transpose() @ projector0 @ state).real
 
     if prob_0 >= 1:
         state1 = None
@@ -82,7 +85,8 @@ def measure_multiple_with_cache(state: tuple[complex], basis: tuple[tuple[comple
         vector = array(vector, dtype=complex)
         M = outer(vector.conj(), vector)  # measurement operator
         projectors[i] = kron(M, identity(2 ** length_diff))  # projector
-        probabilities[i] = (state.conj().transpose() @ projectors[i].conj().transpose() @ projectors[i] @ state).real
+        probabilities[i] = (state.conj().transpose(
+        ) @ projectors[i].conj().transpose() @ projectors[i] @ state).real
         if probabilities[i] < 0:
             probabilities[i] = 0
 
@@ -154,7 +158,8 @@ def measure_multiple_with_cache_ket(state: tuple[complex], num_states: int, leng
         M = zeros((1, basis_count), dtype=complex)  # measurement operator
         M[0, i] = 1
         projectors[i] = kron(M, identity(2 ** length_diff))  # projector
-        probabilities[i] = (state.conj().T @ projectors[i].T @ projectors[i] @ state).real
+        probabilities[i] = (state.conj().T @ projectors[i].T @
+                            projectors[i] @ state).real
         if probabilities[i] < 0:
             probabilities[i] = 0
         if probabilities[i] > 1:
@@ -226,7 +231,8 @@ def measure_multiple_with_cache_density(state: tuple[tuple[complex]], num_states
     projectors = [None] * basis_count
     probabilities = [0] * basis_count
     for i in range(basis_count):
-        M = zeros((basis_count, basis_count), dtype=complex)  # measurement operator
+        # measurement operator
+        M = zeros((basis_count, basis_count), dtype=complex)
         M[i, i] = 1
         projectors[i] = kron(M, identity(2 ** length_diff))  # projector
         probabilities[i] = trace(state @ projectors[i]).real
@@ -273,7 +279,6 @@ def measure_state_with_cache_fock_density(state: tuple[tuple[complex]], povms: t
 def measure_entangled_state_with_cache_fock_density(state: tuple[tuple[complex]], system_index: int, num_systems: int,
                                                     povms: tuple[tuple[tuple[complex]]], truncation: int = 1) \
         -> tuple[list[array], list[float]]:
-
     """Measure one subsystem of a larger composite system.
 
     The measurement SHOULD NOT be entangling measurement, and thus POVM operators should be precisely consisted of
@@ -323,7 +328,6 @@ def measure_entangled_state_with_cache_fock_density(state: tuple[tuple[complex]]
 def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indices: tuple[int], num_systems: int,
                                              povms: tuple[tuple[tuple[complex]]], truncation: int = 1) \
         -> tuple[list[array], list[float]]:
-
     """Measure multiple subsystems of a larger composite system.
 
     Should be called by Quantum Managers.
@@ -360,7 +364,8 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
     fin_meas_sys_idx = max(indices)
     num = len(indices)
     if (fin_meas_sys_idx - init_meas_sys_idx + 1 != num) or (list(indices) != sorted(indices)):
-        raise ValueError("Indices should be consecutive; got {}".format(indices))
+        raise ValueError(
+            "Indices should be consecutive; got {}".format(indices))
 
     povm_list = []
     left_dim = (truncation + 1) ** init_meas_sys_idx
@@ -389,7 +394,6 @@ def measure_multiple_with_cache_fock_density(state: tuple[tuple[complex]], indic
 @lru_cache(maxsize=1000)
 def density_partial_trace(state: tuple[tuple[complex]], indices: tuple[int], num_systems: int, truncation: int = 1) \
         -> array:
-
     """Traces out subsystems systems at given indices.
 
     Args:

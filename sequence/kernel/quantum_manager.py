@@ -8,6 +8,7 @@ The manager defines an API for interacting with quantum states.
 """
 
 from __future__ import annotations
+
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
@@ -15,13 +16,13 @@ if TYPE_CHECKING:
     from ..components.circuit import Circuit
     from .quantum_state import State
 
+from numpy import array, base_repr, cumsum, log, zeros
 from qutip_qip.circuit import QubitCircuit
-from qutip_qip.operations import gate_sequence_product, Gate
-from numpy import log, array, cumsum, base_repr, zeros
+from qutip_qip.operations import Gate, gate_sequence_product
 from scipy.sparse import csr_matrix
 from scipy.special import binom
 
-from .quantum_state import KetState, DensityState, BellDiagonalState
+from .quantum_state import BellDiagonalState, DensityState, KetState
 from .quantum_utils import *
 
 KET_STATE_FORMALISM = "ket_vector"
@@ -85,7 +86,8 @@ class QuantumManager:
             dict[int, int]: dictionary mapping qstate keys to measurement results.
         """
 
-        assert len(keys) == circuit.size, "mismatch between circuit size and supplied qubits"
+        assert len(
+            keys) == circuit.size, "mismatch between circuit size and supplied qubits"
         if len(circuit.measured_qubits) > 0:
             assert meas_samp, "must specify random sample when measuring qubits"
 
@@ -234,7 +236,8 @@ class QuantumManagerKet(QuantumManager):
                 key = keys[0]
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
-                state_0, state_1, prob_0 = measure_entangled_state_with_cache_ket(tuple(state), state_index, num_states)
+                state_0, state_1, prob_0 = measure_entangled_state_with_cache_ket(
+                    tuple(state), state_index, num_states)
                 if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
@@ -275,12 +278,12 @@ class QuantumManagerKet(QuantumManager):
             # set to state measured
             new_state_obj = KetState(result_states[res], [key])
             self.states[key] = new_state_obj
-        
+
         if len(all_keys) > 0:
             new_state_obj = KetState(new_state, all_keys)
             for key in all_keys:
                 self.states[key] = new_state_obj
-        
+
         return dict(zip(keys, result_digits))
 
 
@@ -356,7 +359,8 @@ class QuantumManagerDensity(QuantumManager):
 
         if len(keys) == 1:
             if len(all_keys) == 1:
-                prob_0 = measure_state_with_cache_density(tuple(map(tuple, state)))
+                prob_0 = measure_state_with_cache_density(
+                    tuple(map(tuple, state)))
                 if meas_samp < prob_0:
                     result = 0
                     new_state = [[1, 0], [0, 0]]
@@ -369,7 +373,8 @@ class QuantumManagerDensity(QuantumManager):
                 num_states = len(all_keys)
                 state_index = all_keys.index(key)
                 state_0, state_1, prob_0 =\
-                    measure_entangled_state_with_cache_density(tuple(map(tuple, state)), state_index, num_states)
+                    measure_entangled_state_with_cache_density(
+                        tuple(map(tuple, state)), state_index, num_states)
                 if meas_samp < prob_0:
                     new_state = array(state_0, dtype=complex)
                     result = 0
@@ -428,9 +433,11 @@ class QuantumManagerDensityFock(QuantumManager):
         self._least_available += 1
         if state is None:
             gnd = [1] + [0]*self.truncation
-            self.states[key] = DensityState(gnd, [key], truncation=self.truncation)
+            self.states[key] = DensityState(
+                gnd, [key], truncation=self.truncation)
         else:
-            self.states[key] = DensityState(state, [key], truncation=self.truncation)
+            self.states[key] = DensityState(
+                state, [key], truncation=self.truncation)
 
         return key
 
@@ -438,7 +445,8 @@ class QuantumManagerDensityFock(QuantumManager):
         """Currently the Fock states do not support quantum circuits.
         This method is only to implement abstract method of parent class and SHOULD NOT be called after instantiation.
         """
-        raise Exception("run_circuit method of class QuantumManagerDensityFock called")
+        raise Exception(
+            "run_circuit method of class QuantumManagerDensityFock called")
 
     def _generate_swap_operator(self, num_systems: int, i: int, j: int):
         """Helper function to generate swapping unitary.
@@ -458,7 +466,8 @@ class QuantumManagerDensityFock(QuantumManager):
         for old_index in range(size):
             old_str = base_repr(old_index, self.dim)
             old_str = old_str.zfill(num_systems)
-            new_str = ''.join((old_str[:i], old_str[j], old_str[i+1:j], old_str[i], old_str[j+1:]))
+            new_str = ''.join(
+                (old_str[:i], old_str[j], old_str[i+1:j], old_str[i], old_str[j+1:]))
             new_index = int(new_str, base=self.dim)
             swap_unitary[new_index, old_index] = 1
 
@@ -506,7 +515,8 @@ class QuantumManagerDensityFock(QuantumManager):
                 i = i + start_idx
                 j = all_keys.index(key)
                 if j != i:
-                    swap_unitary = self._generate_swap_operator(len(all_keys), i, j)
+                    swap_unitary = self._generate_swap_operator(
+                        len(all_keys), i, j)
                     new_state = swap_unitary @ new_state @ swap_unitary.T
                     all_keys[i], all_keys[j] = all_keys[j], all_keys[i]
 
@@ -556,10 +566,12 @@ class QuantumManagerDensityFock(QuantumManager):
     def build_ladder(self):
         """Generate matrix of creation and annihilation (ladder) operators on truncated Hilbert space."""
         truncation = self.truncation
-        data = array([sqrt(i+1) for i in range(truncation)])  # elements in create/annihilation operator matrix
+        # elements in create/annihilation operator matrix
+        data = array([sqrt(i+1) for i in range(truncation)])
         row = array([i+1 for i in range(truncation)])
         col = array([i for i in range(truncation)])
-        create = csr_matrix((data, (row, col)), shape=(truncation+1, truncation+1)).toarray()
+        create = csr_matrix((data, (row, col)), shape=(
+            truncation+1, truncation+1)).toarray()
         destroy = create.conj().T
 
         return create, destroy
@@ -607,7 +619,8 @@ class QuantumManagerDensityFock(QuantumManager):
         # calculate meas probabilities and projected states
         if len(keys) == 1:
             if len(all_keys) == 1:
-                states, probs = measure_state_with_cache_fock_density(state_tuple, povm_tuple)
+                states, probs = measure_state_with_cache_fock_density(
+                    state_tuple, povm_tuple)
 
             else:
                 key = keys[0]
@@ -645,13 +658,15 @@ class QuantumManagerDensityFock(QuantumManager):
         """
 
         for key in keys:
-            self.states[key] = None  # clear the stored state at key (particle destructively measured)
+            # clear the stored state at key (particle destructively measured)
+            self.states[key] = None
 
         # assign remaining state
         if len(keys) < len(all_keys):
             indices = tuple([all_keys.index(key) for key in keys])
             new_state_tuple = tuple(map(tuple, new_state))
-            remaining_state = density_partial_trace(new_state_tuple, indices, len(all_keys), self.truncation)
+            remaining_state = density_partial_trace(
+                new_state_tuple, indices, len(all_keys), self.truncation)
             remaining_keys = [key for key in all_keys if key not in keys]
             self.set(remaining_keys, remaining_state)
 
@@ -675,10 +690,12 @@ class QuantumManagerDensityFock(QuantumManager):
         kraus_ops = []
 
         for k in range(self.dim):
-            total_kraus_op = zeros((self.dim ** len(all_keys), self.dim ** len(all_keys)))
+            total_kraus_op = zeros(
+                (self.dim ** len(all_keys), self.dim ** len(all_keys)))
 
             for n in range(k, self.dim):
-                coeff = sqrt(binom(n, k)) * sqrt(((1-loss_rate) ** (n-k)) * (loss_rate ** k))
+                coeff = sqrt(binom(n, k)) * \
+                    sqrt(((1-loss_rate) ** (n-k)) * (loss_rate ** k))
                 single_op = zeros((self.dim, self.dim))
                 single_op[n-k, n] = 1
                 total_op = self._prepare_operator(all_keys, [key], single_op)
@@ -739,7 +756,8 @@ class QuantumManagerBellDiagonal(QuantumManager):
 
     def get(self, key: int):
         if key not in self.states:
-            raise Exception("Attempt to get Bell diagonal state before entanglement.")
+            raise Exception(
+                "Attempt to get Bell diagonal state before entanglement.")
 
         return super().get(key)
 
@@ -747,7 +765,7 @@ class QuantumManagerBellDiagonal(QuantumManager):
         super().set(keys, diag_elems)
         # assert len(keys) == 2, "Bell diagonal states must have 2 keys."
         if len(keys) != 2:
-            #raise Warning("bell diagonal quantum manager received invalid set request")  # optional
+            # raise Warning("bell diagonal quantum manager received invalid set request")  # optional
             for key in keys:
                 if key in self.states:
                     self.states.pop(key)
